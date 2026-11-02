@@ -7,12 +7,16 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
     <Platforms>x86;x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</RuntimeIdentifier>
     <PublishProfile Condition="Exists('Properties\PublishProfiles\win-$(Platform).pubxml')">win-$(Platform).pubxml</PublishProfile>
     <UseWinUI>true</UseWinUI>
     <WinUISDKReferences>false</WinUISDKReferences>
-    <!-- Tray utility: run unpackaged so it can be launched directly and registered for startup. -->
-    <WindowsPackageType>None</WindowsPackageType>
+    <!-- Unpackaged by default so it can be run straight from the build output; pass -p:Packaged=true
+         to build the MSIX package for the Microsoft Store. -->
+    <WindowsPackageType Condition="'$(Packaged)' != 'true'">None</WindowsPackageType>
+    <WindowsPackageType Condition="'$(Packaged)' == 'true'">MSIX</WindowsPackageType>
+    <EnableMsixTooling Condition="'$(Packaged)' == 'true'">true</EnableMsixTooling>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -20,6 +24,15 @@
 
   <ItemGroup>
     <Content Include="Assets\AppIcon.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Packaged)' == 'true'">
+    <AppxManifest Include="Package.appxmanifest" />
+    <Content Include="Assets\*.png" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Packaged)' != 'true'">
+    <None Remove="Package.appxmanifest" />
   </ItemGroup>
 
   <ItemGroup>

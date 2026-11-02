@@ -1,15 +1,20 @@
 #:package System.Drawing.Common@10.0.0
 #:property TargetFramework=net10.0-windows
 
-// Generates src/Headroom/Assets/AppIcon.ico in a Fluent-like style: a small guitar amp whose
-// grille shows three level bars (the quota "headroom" left).
-// Usage: dotnet run tools/generate-icon.cs [output.ico]
+// Generates the app icon in a Fluent-like style: a small guitar amp whose grille shows three
+// level bars (the quota "headroom" left). Writes src/Headroom/Assets/AppIcon.ico and the MSIX
+// visual assets (tiles, store logo, taskbar/target-size icons) next to it.
+// Usage: dotnet run tools/generate-icon.cs [assets-directory]
 
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 
-var output = args.Length > 0 ? args[0] : Path.Combine("src", "Headroom", "Assets", "AppIcon.ico");
+var assets = args.Length > 0 ? args[0] : Path.Combine("src", "Headroom", "Assets");
+Directory.CreateDirectory(assets);
+GenerateMsixAssets(assets);
+
+var output = Path.Combine(assets, "AppIcon.ico");
 int[] sizes = [16, 20, 24, 32, 40, 48, 64, 128, 256];
 
 var images = sizes.Select(size => (size, png: RenderPng(size))).ToList();
@@ -42,9 +47,62 @@ using (var writer = new BinaryWriter(stream))
 
 Console.WriteLine($"Wrote {output} ({string.Join(", ", sizes)})");
 
+static void GenerateMsixAssets(string directory)
+{
+    int[] scales = [100, 125, 150, 200, 400];
+    foreach (var scale in scales)
+    {
+        var f = scale / 100f;
+        // App list / taskbar icon and store logo: the icon fills the square (it has its own margins).
+        SaveAsset(directory, $"Square44x44Logo.scale-{scale}.png", Scale(44, f), Scale(44, f), 1f);
+        SaveAsset(directory, $"StoreLogo.scale-{scale}.png", Scale(50, f), Scale(50, f), 1f);
+        // Tiles and splash screen: the icon sits centered with generous padding.
+        SaveAsset(directory, $"Square150x150Logo.scale-{scale}.png", Scale(150, f), Scale(150, f), 0.6f);
+        SaveAsset(directory, $"Wide310x150Logo.scale-{scale}.png", Scale(310, f), Scale(150, f), 0.6f);
+        SaveAsset(directory, $"SplashScreen.scale-{scale}.png", Scale(620, f), Scale(300, f), 0.5f);
+    }
+
+    // Exact-size icons for the taskbar, Start and Explorer. The icon has no backplate, so the
+    // plated and unplated variants are identical.
+    foreach (var size in (int[])[16, 20, 24, 30, 32, 36, 40, 48, 60, 64, 72, 80, 96, 256])
+    {
+        foreach (var suffix in (string[])["", "_altform-unplated", "_altform-lightunplated"])
+        {
+            SaveAsset(directory, $"Square44x44Logo.targetsize-{size}{suffix}.png", size, size, 1f);
+        }
+    }
+
+    Console.WriteLine($"Wrote MSIX assets to {directory}");
+}
+
+static int Scale(int value, float factor) => (int)MathF.Round(value * factor);
+
+static void SaveAsset(string directory, string name, int width, int height, float iconFraction)
+{
+    var iconSize = (int)MathF.Round(MathF.Min(width, height) * iconFraction);
+    using var canvas = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+    using (var g = Graphics.FromImage(canvas))
+    {
+        g.Clear(Color.Transparent);
+        using var icon = RenderIcon(iconSize);
+        g.DrawImage(icon, (width - iconSize) / 2, (height - iconSize) / 2, iconSize, iconSize);
+    }
+
+    canvas.Save(Path.Combine(directory, name), ImageFormat.Png);
+}
+
 static byte[] RenderPng(int size)
 {
-    using var bitmap = new Bitmap(size, size, PixelFormat.Format32bppArgb);
+    using var bitmap = RenderIcon(size);
+    using var memory = new MemoryStream();
+    bitmap.Save(memory, ImageFormat.Png);
+    return memory.ToArray();
+}
+
+// Draws the icon at its native size so every asset stays crisp instead of being resampled.
+static Bitmap RenderIcon(int size)
+{
+    var bitmap = new Bitmap(size, size, PixelFormat.Format32bppArgb);
     using (var g = Graphics.FromImage(bitmap))
     {
         g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -161,9 +219,7 @@ static byte[] RenderPng(int size)
         }
     }
 
-    using var memory = new MemoryStream();
-    bitmap.Save(memory, ImageFormat.Png);
-    return memory.ToArray();
+    return bitmap;
 }
 
 static GraphicsPath RoundedRect(RectangleF rect, float radius)

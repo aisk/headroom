@@ -42,7 +42,13 @@ dotnet build src/Headroom -p:Platform=x64
 dotnet test tests/Headroom.Core.Tests
 ```
 
-The app is unpackaged and bundles the Windows App SDK. Right-click the tray icon for **Refresh now**, **Start with Windows**, and **Quit**. Windows puts new tray icons in the overflow area (^); drag the icon next to the clock to keep it visible.
+The default build is unpackaged and bundles the Windows App SDK. The Microsoft Store package (x64 and ARM64) is built with Visual Studio's MSBuild:
+
+```powershell
+msbuild src/Headroom -restore -p:Configuration=Release -p:Platform=x64 -p:Packaged=true -p:GenerateAppxPackageOnBuild=true -p:UapAppxPackageBuildMode=StoreUpload -p:AppxBundle=Always "-p:AppxBundlePlatforms=x64|ARM64" -p:AppxPackageDir=$PWD\artifacts\AppPackages\
+```
+
+Right-click the tray icon for **Refresh now**, **Start with Windows**, and **Quit**. Windows puts new tray icons in the overflow area (^); drag the icon next to the clock to keep it visible.
 
 ## Project layout
 

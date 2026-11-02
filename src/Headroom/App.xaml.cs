@@ -54,7 +54,7 @@ public partial class App : Application
         _tray = new TrayIcon();
         _tray.Invoked += (_, _) => _flyout.Toggle(_tray.GetIconRect());
         _tray.ShowRequested += (_, _) => _flyout.ShowAt(_tray.GetIconRect());
-        _tray.ContextMenuRequested += (_, anchor) => ShowContextMenu(anchor);
+        _tray.ContextMenuRequested += (_, anchor) => _ = ShowContextMenuAsync(anchor);
         _tray.AppearanceChanged += (_, _) => UpdateTray();
         _viewModel.Changed += (_, _) => UpdateTray();
         UpdateTray();
@@ -62,7 +62,7 @@ public partial class App : Application
         _monitor.Start(RefreshInterval);
 
         // A launch by the user shows the panel right away; a startup launch stays in the tray.
-        if (!Environment.GetCommandLineArgs().Contains(AutoStart.Argument, StringComparer.OrdinalIgnoreCase))
+        if (!AutoStart.IsStartupLaunch())
         {
             DispatcherQueue.GetForCurrentThread().TryEnqueue(DispatcherQueuePriority.Low, () => _flyout.ShowAt(_tray.GetIconRect()));
         }
@@ -92,19 +92,22 @@ public partial class App : Application
         _tray.Update(TrayIconRenderer.Render(_viewModel.TrayBars()), _viewModel.TrayTooltip());
     }
 
-    private void ShowContextMenu(Interop.NativeMethods.POINT anchor)
+    private async Task ShowContextMenuAsync(Interop.NativeMethods.POINT anchor)
     {
         if (_tray is null)
         {
             return;
         }
 
+        var autoStart = await GetAutoStartStateAsync();
         var command = _tray.ShowMenu(
         [
             new TrayMenuItem(MenuOpen, "Show usage"),
             new TrayMenuItem(MenuRefresh, "Refresh now"),
             TrayMenuItem.Separator,
-            new TrayMenuItem(MenuAutoStart, "Start with Windows", IsChecked: AutoStart.IsEnabled),
+            new TrayMenuItem(MenuAutoStart, AutoStartMenuText(autoStart),
+                IsChecked: autoStart is AutoStartState.Enabled,
+                IsEnabled: autoStart is not AutoStartState.ManagedByPolicy),
             TrayMenuItem.Separator,
             new TrayMenuItem(MenuQuit, "Quit Headroom"),
         ], anchor);
@@ -118,11 +121,49 @@ public partial class App : Application
                 _ = _viewModel?.RefreshAsync(manual: true);
                 break;
             case MenuAutoStart:
-                AutoStart.Set(!AutoStart.IsEnabled);
+                await ToggleAutoStartAsync(autoStart);
                 break;
             case MenuQuit:
                 Quit();
                 break;
+        }
+    }
+
+    private static string AutoStartMenuText(AutoStartState state) => state switch
+    {
+        AutoStartState.DisabledByUser => "Start with Windows (turn on in Settings)",
+        AutoStartState.ManagedByPolicy => "Start with Windows (managed by your organization)",
+        _ => "Start with Windows",
+    };
+
+    private static async Task<AutoStartState> GetAutoStartStateAsync()
+    {
+        try
+        {
+            return await AutoStart.GetStateAsync();
+        }
+        catch (Exception)
+        {
+            return AutoStartState.ManagedByPolicy; // Shown disabled rather than failing the menu.
+        }
+    }
+
+    private static async Task ToggleAutoStartAsync(AutoStartState current)
+    {
+        try
+        {
+            if (current is AutoStartState.DisabledByUser)
+            {
+                // Windows does not let an app re-enable a startup task the user turned off.
+                await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings:startupapps"));
+                return;
+            }
+
+            await AutoStart.SetAsync(current is not AutoStartState.Enabled);
+        }
+        catch (Exception)
+        {
+            // Leave the setting unchanged; the menu shows the actual state next time.
         }
     }
 
