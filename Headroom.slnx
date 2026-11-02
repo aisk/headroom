@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Headroom.Core/Headroom.Core.csproj" />
+    <Project Path="src/Headroom/Headroom.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Headroom.Core.Tests/Headroom.Core.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="Headroom.Flyout.FlyoutWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Headroom.ViewModels"
+    Title="Headroom">
+    <Window.SystemBackdrop>
+        <DesktopAcrylicBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid x:Name="Root" KeyDown="OnRootKeyDown">
+        <ScrollViewer x:Name="Scroller" IsTabStop="True" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled">
+            <StackPanel x:Name="ContentPanel" Padding="16,14,16,16" Spacing="12" SizeChanged="OnContentSizeChanged">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Usage" />
+                    <Button
+                        Grid.Column="1"
+                        Padding="6"
+                        Click="OnRefreshClick"
+                        Style="{ThemeResource SubtleButtonStyle}"
+                        ToolTipService.ToolTip="Refresh now">
+                        <FontIcon FontSize="14" Glyph="&#xE72C;" />
+                    </Button>
+                </Grid>
+
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="No supported CLI found. Install Antigravity (agy), Claude Code, or Codex and sign in."
+                    TextWrapping="Wrap"
+                    Visibility="{x:Bind ViewModel.HasNoProviders, Mode=OneWay}" />
+
+                <ItemsControl ItemsSource="{x:Bind ViewModel.Providers}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="8" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ProviderViewModel">
+                            <Border
+                                Padding="12"
+                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Visibility="{x:Bind IsVisible, Mode=OneWay}">
+                                <StackPanel Spacing="10">
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="{x:Bind Name}" />
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Style="{ThemeResource CaptionTextBlockStyle}"
+                                            Text="{x:Bind Subtitle, Mode=OneWay}"
+                                            TextWrapping="NoWrap"
+                                            TextTrimming="CharacterEllipsis" />
+                                        <ProgressRing
+                                            Grid.Column="2"
+                                            Width="14"
+                                            Height="14"
+                                            IsActive="{x:Bind IsRefreshing, Mode=OneWay}" />
+                                    </Grid>
+
+                                    <ItemsControl ItemsSource="{x:Bind Windows}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Spacing="10" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:UsageWindowViewModel">
+                                                <StackPanel Spacing="4">
+                                                    <Grid>
+                                                        <TextBlock Style="{ThemeResource CaptionTextBlockStyle}" Text="{x:Bind Title}" />
+                                                        <TextBlock
+                                                            HorizontalAlignment="Right"
+                                                            Style="{ThemeResource CaptionTextBlockStyle}"
+                                                            Text="{x:Bind RemainingText}" />
+                                                    </Grid>
+                                                    <ProgressBar
+                                                        Foreground="{x:Bind BarBrush}"
+                                                        Maximum="100"
+                                                        Value="{x:Bind Remaining}" />
+                                                    <TextBlock
+                                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                        Style="{ThemeResource CaptionTextBlockStyle}"
+                                                        Text="{x:Bind ResetText, Mode=OneWay}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <TextBlock
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{ThemeResource CaptionTextBlockStyle}"
+                                        Text="{x:Bind Note, Mode=OneWay}"
+                                        Visibility="{x:Bind HasNote, Mode=OneWay}" />
+                                    <TextBlock
+                                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                        Style="{ThemeResource CaptionTextBlockStyle}"
+                                        Text="{x:Bind Error, Mode=OneWay}"
+                                        TextWrapping="Wrap"
+                                        Visibility="{x:Bind HasError, Mode=OneWay}" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>
