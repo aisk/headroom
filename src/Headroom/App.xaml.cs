@@ -1,6 +1,7 @@
-﻿using Headroom.Core.Providers.Antigravity;
+using Headroom.Core.Providers.Antigravity;
 using Headroom.Core.Providers.Claude;
 using Headroom.Core.Providers.Codex;
+using Headroom.Core.Providers.Grok;
 using Headroom.Core.Usage;
 using Headroom.Flyout;
 using Headroom.Tray;
@@ -44,7 +45,7 @@ public partial class App : Application
             return;
         }
 
-        _monitor = new UsageMonitor([new AntigravityUsageProvider(), new ClaudeUsageProvider(), new CodexUsageProvider()]);
+        _monitor = new UsageMonitor([new AntigravityUsageProvider(), new ClaudeUsageProvider(), new CodexUsageProvider(), new GrokUsageProvider()]);
         _viewModel = new MainViewModel(_monitor, DispatcherQueue.GetForCurrentThread());
         _flyout = new FlyoutWindow(_viewModel);
 

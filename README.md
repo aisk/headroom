@@ -16,6 +16,7 @@ model prompt, so polling does not consume tokens.
 | Antigravity | `agy -p /usage --output-format json` (structured report, agy ≥ 1.1.11). Auto-update is disabled for the probe and browser sign-in is blocked. |
 | Claude Code | `claude /usage` run non-interactively in a dedicated probe directory, with hooks and MCP servers disabled for that process; probe transcripts are removed afterwards. Requires Claude Code ≥ 2.0. |
 | Codex | `codex app-server` JSON-RPC (`account/read`, `account/rateLimits/read`) with a read-only sandbox. |
+| Grok | `grok agent stdio` (Agent Client Protocol) `initialize` + the `_x.ai/billing` extension. No session is created. Plans that publish no usage percentage (e.g. Free) show only the plan and billing period. |
 
 Tools whose CLI cannot be found are hidden. Usage refreshes every 5 minutes, when the flyout is
 opened with data older than 2 minutes, or from the refresh button / tray menu.

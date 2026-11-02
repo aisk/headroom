@@ -49,6 +49,8 @@ public sealed class ProviderViewModel(ProviderState state) : ObservableObject
 
     public ObservableCollection<UsageWindowViewModel> Windows { get; } = [];
 
+    public bool HasWindows => Windows.Count > 0;
+
     public string Subtitle
     {
         get => _subtitle;
@@ -115,6 +117,8 @@ public sealed class ProviderViewModel(ProviderState state) : ObservableObject
             {
                 Windows.Add(new UsageWindowViewModel(window));
             }
+
+            RaisePropertyChanged(nameof(HasWindows));
         }
 
         RefreshTexts(now);

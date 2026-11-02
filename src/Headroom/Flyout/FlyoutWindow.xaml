@@ -30,7 +30,7 @@
 
                 <TextBlock
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="No supported CLI found. Install Antigravity (agy), Claude Code, or Codex and sign in."
+                    Text="No supported CLI found. Install Antigravity (agy), Claude Code, Codex, or Grok and sign in."
                     TextWrapping="Wrap"
                     Visibility="{x:Bind ViewModel.HasNoProviders, Mode=OneWay}" />
 
@@ -72,7 +72,7 @@
                                             IsActive="{x:Bind IsRefreshing, Mode=OneWay}" />
                                     </Grid>
 
-                                    <ItemsControl ItemsSource="{x:Bind Windows}">
+                                    <ItemsControl ItemsSource="{x:Bind Windows}" Visibility="{x:Bind HasWindows, Mode=OneWay}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <StackPanel Spacing="10" />

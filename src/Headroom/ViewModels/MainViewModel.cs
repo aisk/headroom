@@ -66,10 +66,13 @@ public sealed class MainViewModel : ObservableObject
         var lines = new List<string> { "Headroom" };
         foreach (var provider in Providers.Where(p => p.IsVisible))
         {
-            var constrained = provider.State.Snapshot?.MostConstrained;
+            var snapshot = provider.State.Snapshot;
+            var constrained = snapshot?.MostConstrained;
             lines.Add(constrained is not null
                 ? $"{provider.Name}: {Math.Round(constrained.RemainingPercent):0}% left ({constrained.Label})"
-                : provider.HasError ? $"{provider.Name}: error" : $"{provider.Name}: …");
+                : provider.HasError ? $"{provider.Name}: error"
+                : snapshot is not null ? $"{provider.Name}: {snapshot.Plan ?? "no quota data"}"
+                : $"{provider.Name}: …");
         }
 
         return string.Join('\n', lines);

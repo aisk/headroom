@@ -32,7 +32,7 @@ public sealed record UsageSnapshot(
 /// <summary>
 /// A user-presentable failure while reading usage from a CLI.
 /// </summary>
-public sealed class UsageProviderException(string message, Exception? inner = null) : Exception(message, inner);
+public class UsageProviderException(string message, Exception? inner = null) : Exception(message, inner);
 
 public interface IUsageProvider
 {

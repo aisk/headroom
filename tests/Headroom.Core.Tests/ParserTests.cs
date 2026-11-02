@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Headroom.Core.Providers.Antigravity;
 using Headroom.Core.Providers.Claude;
 using Headroom.Core.Providers.Codex;
+using Headroom.Core.Providers.Grok;
 using Headroom.Core.Usage;
 
 namespace Headroom.Core.Tests;
@@ -73,6 +74,52 @@ public class CodexRateLimitParserTests
         Assert.Equal("Plus", snapshot.Plan);
         Assert.Equal("me@example.com", snapshot.Account);
         Assert.Null(snapshot.Note);
+    }
+}
+
+public class GrokBillingParserTests
+{
+    [Fact]
+    public void FreePlanWithoutPercentageReportsNoWindows()
+    {
+        var result = JsonNode.Parse("""
+            {"config":{"currentPeriod":{"type":"USAGE_PERIOD_TYPE_WEEKLY","start":"2026-10-29T00:00:00+00:00","end":"2026-11-05T00:00:00+00:00"},
+              "onDemandCap":{"val":0},"onDemandUsed":{"val":0},"prepaidBalance":{"val":0},"isUnifiedBillingUser":true},
+             "subscription_tier":"Free"}
+            """);
+
+        var snapshot = GrokBillingParser.Parse(result, DateTimeOffset.UnixEpoch);
+
+        Assert.Empty(snapshot.Windows);
+        Assert.Equal("Free", snapshot.Plan);
+        Assert.Contains("does not report a usage percentage", snapshot.Note);
+    }
+
+    [Fact]
+    public void UsesCreditPercentageAndPrepaidBalance()
+    {
+        var result = JsonNode.Parse("""
+            {"config":{"creditUsagePercent":37.5,"currentPeriod":{"type":"USAGE_PERIOD_TYPE_WEEKLY","end":"2026-11-05T00:00:00Z"},
+              "prepaidBalance":{"val":"1250"}},"subscription_tier":"SuperGrok"}
+            """);
+
+        var snapshot = GrokBillingParser.Parse(result, DateTimeOffset.UnixEpoch);
+
+        var window = Assert.Single(snapshot.Windows);
+        Assert.Equal("Weekly", window.Label);
+        Assert.Equal(37.5, window.UsedPercent);
+        Assert.Equal(new DateTimeOffset(2026, 11, 5, 0, 0, 0, TimeSpan.Zero), window.ResetsAt);
+        Assert.Equal("Prepaid balance: $12.50", snapshot.Note);
+    }
+
+    [Fact]
+    public void FallsBackToOnDemandSpend()
+    {
+        var result = JsonNode.Parse("""{"config":{"onDemandCap":{"val":2000},"onDemandUsed":{"val":500}}}""");
+
+        var snapshot = GrokBillingParser.Parse(result, DateTimeOffset.UnixEpoch);
+
+        Assert.Equal(25, Assert.Single(snapshot.Windows).UsedPercent);
     }
 }
 
