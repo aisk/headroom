@@ -1,8 +1,8 @@
 # Headroom
 
-Headroom is a small Windows tray app that shows how much quota you have left in your AI coding CLIs: **Antigravity (`agy`)**, **Claude Code**, **Codex**, and **Grok**.
+<img src="docs/screenshot.png" alt="Headroom usage panel" align="right" width="287">
 
-![Headroom](docs/screenshot.png)
+Headroom is a small Windows tray app that shows how much quota you have left in your AI coding CLIs: **Antigravity (`agy`)**, **Claude Code**, **Codex**, and **Grok**.
 
 ## How it works
 
