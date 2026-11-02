@@ -4,7 +4,7 @@
 
 Headroom is a small Windows tray app that shows how much quota you have left in your AI coding CLIs: **Antigravity (`agy`)**, **Claude Code**, **Codex**, and **Grok**.
 
-It does not talk to any vendor server itself. It runs the CLIs you already have installed and signed in, asks them for your usage the same way you would by hand, and shows the result in a panel next to the volume icon.
+It does not talk to any vendor server itself. It runs the CLIs you already have installed and signed in, asks them for your usage the same way you would by hand, and shows the result in a panel in the taskbar notification area.
 
 ## Will this get my account banned, or use up my tokens?
 
@@ -33,9 +33,17 @@ For each tool, Headroom runs one of these commands or protocols, which the CLI p
 
 Tools whose CLI is not installed are hidden. Usage refreshes every 5 minutes, when the panel is opened with data older than 2 minutes, or on demand from the refresh button or the tray menu.
 
-## Install and build
+## Install
 
-Requires Windows 10 2004 or later and the .NET 10 SDK.
+<a href="https://apps.microsoft.com/detail/9N2X3T516ZFW?mode=direct"><img src="https://get.microsoft.com/images/en-us%20dark.svg" alt="Get it from Microsoft" width="200"></a>
+
+Requires Windows 10 2004 or later and at least one of the supported CLIs installed and signed in.
+
+Right-click the tray icon for **Refresh now**, **Start with Windows**, and **Quit**. Windows puts new tray icons in the overflow area (^); drag the icon next to the clock to keep it visible.
+
+## Build
+
+Requires the .NET 10 SDK.
 
 ```powershell
 dotnet build src/Headroom -p:Platform=x64
@@ -48,8 +56,6 @@ The default build is unpackaged and bundles the Windows App SDK. The Microsoft S
 msbuild src/Headroom -restore -p:Configuration=Release -p:Platform=x64 -p:Packaged=true -p:GenerateAppxPackageOnBuild=true -p:UapAppxPackageBuildMode=StoreUpload -p:AppxBundle=Always "-p:AppxBundlePlatforms=x64|ARM64" -p:AppxPackageDir=$PWD\artifacts\AppPackages\
 ```
 
-Right-click the tray icon for **Refresh now**, **Start with Windows**, and **Quit**. Windows puts new tray icons in the overflow area (^); drag the icon next to the clock to keep it visible.
-
 ## Project layout
 
 - `src/Headroom.Core`: CLI discovery, usage providers, and output parsers (no UI).
@@ -59,3 +65,5 @@ Right-click the tray icon for **Refresh now**, **Start with Windows**, and **Qui
 ## License
 
 Headroom is licensed under the [GNU General Public License v3.0](LICENSE).
+
+Headroom is not affiliated with Google, Anthropic, OpenAI, or xAI. Product names are used only to identify the CLIs it works with.
