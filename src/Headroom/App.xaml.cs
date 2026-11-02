@@ -47,7 +47,7 @@ public partial class App : Application
             return;
         }
 
-        _monitor = new UsageMonitor([new AntigravityUsageProvider(), new ClaudeUsageProvider(), new CodexUsageProvider(), new GrokUsageProvider()]);
+        _monitor = new UsageMonitor((IUsageProvider[])[new AntigravityUsageProvider(), new ClaudeUsageProvider(), new CodexUsageProvider(), new GrokUsageProvider()]);
         _viewModel = new MainViewModel(_monitor, DispatcherQueue.GetForCurrentThread());
         _flyout = new FlyoutWindow(_viewModel);
 

@@ -18,6 +18,9 @@
     <WindowsPackageType Condition="'$(Packaged)' == 'true'">MSIX</WindowsPackageType>
     <EnableMsixTooling Condition="'$(Packaged)' == 'true'">true</EnableMsixTooling>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <!-- Trim-safe WinRT interop: CsWinRT generates the marshaling code for objects passed to XAML (view
+         models must be partial) and warns about anything it cannot handle. -->
+    <IsAotCompatible>true</IsAotCompatible>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -40,6 +43,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The CsWinRT 2.2 bundled with the Windows SDK projection does not generate interop for
+         ObservableCollection<T> bound by x:Bind, so trimmed builds showed an empty panel. -->
+    <PackageReference Include="Microsoft.Windows.CsWinRT" Version="2.3.1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2957" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.4" />
   </ItemGroup>

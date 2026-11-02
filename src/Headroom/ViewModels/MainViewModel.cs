@@ -4,7 +4,7 @@ using Microsoft.UI.Dispatching;
 
 namespace Headroom.ViewModels;
 
-public sealed class MainViewModel : ObservableObject
+public sealed partial class MainViewModel : ObservableObject
 {
     private readonly UsageMonitor _monitor;
     private readonly DispatcherQueue _dispatcher;

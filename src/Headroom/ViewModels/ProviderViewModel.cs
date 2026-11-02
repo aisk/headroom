@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Media;
 
 namespace Headroom.ViewModels;
 
-public sealed class UsageWindowViewModel(UsageWindow window) : ObservableObject
+public sealed partial class UsageWindowViewModel(UsageWindow window) : ObservableObject
 {
     private string _resetText = string.Empty;
 
@@ -34,7 +34,7 @@ public sealed class UsageWindowViewModel(UsageWindow window) : ObservableObject
         ResetText = Formatting.ResetText(Window.ResetsAt, Window.ResetDescription, now);
 }
 
-public sealed class ProviderViewModel(ProviderState state) : ObservableObject
+public sealed partial class ProviderViewModel(ProviderState state) : ObservableObject
 {
     private string _subtitle = string.Empty;
     private string? _error;

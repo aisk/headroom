@@ -94,7 +94,7 @@ internal sealed class TrayIcon : IDisposable
     }
 
     /// <summary>Shows a native context menu and returns the chosen item id, or 0.</summary>
-    public uint ShowMenu(IReadOnlyList<TrayMenuItem> items, POINT anchor)
+    public uint ShowMenu(TrayMenuItem[] items, POINT anchor)
     {
         var menu = CreatePopupMenu();
         try
