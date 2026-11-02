@@ -4,9 +4,25 @@
 
 Headroom is a small Windows tray app that shows how much quota you have left in your AI coding CLIs: **Antigravity (`agy`)**, **Claude Code**, **Codex**, and **Grok**.
 
+It does not talk to any vendor server itself. It runs the CLIs you already have installed and signed in, asks them for your usage the same way you would by hand, and shows the result in a panel next to the volume icon.
+
+## Will this get my account banned, or use up my tokens?
+
+Headroom is designed to avoid both:
+
+- **No unofficial API access.** It never reads your stored credentials, never calls private web endpoints, and never imitates a browser or a CLI. The usage data comes from the vendor's own CLI.
+- **No prompts are sent.** Every query is a local command or an account query (see [How it works](#how-it-works)). None of them starts a conversation with a model, so polling uses no tokens and no message quota.
+- **Old CLIs are skipped.** On an old CLI, `/usage` might be treated as an ordinary prompt, so Headroom checks the version first (agy ≥ 1.1.11, Claude Code ≥ 2.0) and refuses to run it otherwise.
+- **Your setup is left alone.** Probes run with a read-only sandbox (Codex), with hooks and MCP servers disabled for that one process (Claude Code), and with self-updates disabled (agy). Your saved settings are not changed. Claude Code transcripts created by the probe are deleted afterwards.
+- **Signed-out CLIs are not hammered.** Claude Code's login is checked before `/usage` runs. If agy is signed out, Headroom stops polling it until you press Refresh, so it cannot keep trying to sign in.
+
+The traffic is what the CLI itself sends when you check usage by hand, a few times an hour. This is not a guarantee from any vendor; check their terms if you are unsure.
+
+<br clear="right">
+
 ## How it works
 
-Headroom does not talk to any vendor server itself. It runs the CLIs you already have installed and signed in, using commands or protocols those CLIs provide for reading usage, and parses their output:
+For each tool, Headroom runs one of these commands or protocols, which the CLI provides for reading usage, and parses the output:
 
 | Tool | What Headroom runs |
 | --- | --- |
@@ -16,18 +32,6 @@ Headroom does not talk to any vendor server itself. It runs the CLIs you already
 | Grok | `grok agent stdio`: Grok's Agent Client Protocol server, queried with its `_x.ai/billing` method. |
 
 Tools whose CLI is not installed are hidden. Usage refreshes every 5 minutes, when the panel is opened with data older than 2 minutes, or on demand from the refresh button or the tray menu.
-
-## Will this get my account banned, or use up my tokens?
-
-Headroom is designed to avoid both:
-
-- **No unofficial API access.** It never reads your stored credentials, never calls private web endpoints, and never imitates a browser or a CLI. The usage data comes from the vendor's own CLI.
-- **No prompts are sent.** Every query above is a local command or an account query. None of them starts a conversation with a model, so polling uses no tokens and no message quota.
-- **Old CLIs are skipped.** On an old CLI, `/usage` might be treated as an ordinary prompt, so Headroom checks the version first (agy ≥ 1.1.11, Claude Code ≥ 2.0) and refuses to run it otherwise.
-- **Your setup is left alone.** Probes run with a read-only sandbox (Codex), with hooks and MCP servers disabled for that one process (Claude Code), and with self-updates disabled (agy). Your saved settings are not changed. Claude Code transcripts created by the probe are deleted afterwards.
-- **Signed-out CLIs are not hammered.** Claude Code's login is checked before `/usage` runs. If agy is signed out, Headroom stops polling it until you press Refresh, so it cannot keep trying to sign in.
-
-The traffic is what the CLI itself sends when you check usage by hand, a few times an hour. This is not a guarantee from any vendor; check their terms if you are unsure.
 
 ## Install and build
 
