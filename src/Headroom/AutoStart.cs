@@ -8,14 +8,19 @@ internal static class AutoStart
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ValueName = "Headroom";
 
-    private static string Command => $"\"{Environment.ProcessPath}\"";
+    /// <summary>Passed by the Run key so a startup launch stays in the tray instead of opening the panel.</summary>
+    public const string Argument = "--autostart";
+
+    private static string Command => $"\"{Environment.ProcessPath}\" {Argument}";
 
     public static bool IsEnabled
     {
         get
         {
             using var key = Registry.CurrentUser.OpenSubKey(RunKey);
-            return string.Equals(key?.GetValue(ValueName) as string, Command, StringComparison.OrdinalIgnoreCase);
+            // Accept registrations with or without arguments, as long as they point at this executable.
+            return key?.GetValue(ValueName) is string value &&
+                   value.StartsWith($"\"{Environment.ProcessPath}\"", StringComparison.OrdinalIgnoreCase);
         }
     }
 

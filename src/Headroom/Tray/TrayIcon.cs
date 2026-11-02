@@ -17,6 +17,11 @@ internal sealed class TrayIcon : IDisposable
 {
     private const uint IconId = 1;
     private const uint CallbackMessage = WM_APP + 1;
+
+    /// <summary>Posted by a second instance to ask the running one to open its panel.</summary>
+    public const uint ShowRequestMessage = WM_APP + 2;
+
+    public const string WindowClassName = ClassName;
     private const string ClassName = "Headroom.TrayIconWindow";
 
     private readonly WndProc _wndProc;
@@ -52,6 +57,9 @@ internal sealed class TrayIcon : IDisposable
 
     /// <summary>Left click or keyboard activation on the icon.</summary>
     public event EventHandler? Invoked;
+
+    /// <summary>Another launch of the app asked this instance to show its panel.</summary>
+    public event EventHandler? ShowRequested;
 
     /// <summary>Right click; the argument is the anchor point in screen coordinates.</summary>
     public event EventHandler<POINT>? ContextMenuRequested;
@@ -161,6 +169,12 @@ internal sealed class TrayIcon : IDisposable
                     break;
             }
 
+            return IntPtr.Zero;
+        }
+
+        if (msg == ShowRequestMessage)
+        {
+            ShowRequested?.Invoke(this, EventArgs.Empty);
             return IntPtr.Zero;
         }
 

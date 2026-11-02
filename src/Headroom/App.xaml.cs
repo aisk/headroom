@@ -41,6 +41,8 @@ public partial class App : Application
         _singleInstance = new Mutex(initiallyOwned: true, @"Local\Headroom.SingleInstance", out var createdNew);
         if (!createdNew)
         {
+            // Opening the app again (e.g. from a desktop shortcut) shows the running instance's panel.
+            SignalRunningInstance();
             Exit();
             return;
         }
@@ -51,12 +53,33 @@ public partial class App : Application
 
         _tray = new TrayIcon();
         _tray.Invoked += (_, _) => _flyout.Toggle(_tray.GetIconRect());
+        _tray.ShowRequested += (_, _) => _flyout.ShowAt(_tray.GetIconRect());
         _tray.ContextMenuRequested += (_, anchor) => ShowContextMenu(anchor);
         _tray.AppearanceChanged += (_, _) => UpdateTray();
         _viewModel.Changed += (_, _) => UpdateTray();
         UpdateTray();
 
         _monitor.Start(RefreshInterval);
+
+        // A launch by the user shows the panel right away; a startup launch stays in the tray.
+        if (!Environment.GetCommandLineArgs().Contains(AutoStart.Argument, StringComparer.OrdinalIgnoreCase))
+        {
+            DispatcherQueue.GetForCurrentThread().TryEnqueue(DispatcherQueuePriority.Low, () => _flyout.ShowAt(_tray.GetIconRect()));
+        }
+    }
+
+    private static void SignalRunningInstance()
+    {
+        var hwnd = Interop.NativeMethods.FindWindowW(TrayIcon.WindowClassName, null);
+        if (hwnd == IntPtr.Zero)
+        {
+            return;
+        }
+
+        // This process was started by the user and may hand its foreground right to the running instance.
+        Interop.NativeMethods.GetWindowThreadProcessId(hwnd, out var processId);
+        Interop.NativeMethods.AllowSetForegroundWindow(processId);
+        Interop.NativeMethods.PostMessageW(hwnd, TrayIcon.ShowRequestMessage, IntPtr.Zero, IntPtr.Zero);
     }
 
     private void UpdateTray()

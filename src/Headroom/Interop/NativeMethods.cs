@@ -169,6 +169,15 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     public static extern bool GetCursorPos(out POINT point);
 
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern IntPtr FindWindowW(string className, string? windowName);
+
+    [DllImport("user32.dll")]
+    public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+    [DllImport("user32.dll")]
+    public static extern bool AllowSetForegroundWindow(uint processId);
+
     [DllImport("user32.dll")]
     public static extern IntPtr CreateIconIndirect(ref ICONINFO iconInfo);
 
