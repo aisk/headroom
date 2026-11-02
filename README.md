@@ -1,41 +1,51 @@
 # Headroom
 
-A small WinUI 3 tray app for Windows that shows how much quota is left in your AI coding CLIs.
-It has no main window: it lives in the notification area next to the volume icon, and clicking
-the icon opens a flyout with the usage of each tool.
+Headroom is a small Windows tray app that shows how much quota you have left in your AI coding CLIs: **Antigravity (`agy`)**, **Claude Code**, **Codex**, and **Grok**.
 
-The tray icon draws one bar per tool, filled with the remaining quota of its most constrained window.
+![Headroom](docs/screenshot.png)
 
-## Data sources
+## How it works
 
-Headroom only uses the official CLIs, never private web endpoints or stored tokens, and never sends a
-model prompt, so polling does not consume tokens.
+Headroom does not talk to any vendor server itself. It runs the CLIs you already have installed and signed in, using commands or protocols those CLIs provide for reading usage, and parses their output:
 
-| Tool | How usage is read |
+| Tool | What Headroom runs |
 | --- | --- |
-| Antigravity | `agy -p /usage --output-format json` (structured report, agy ≥ 1.1.11). Auto-update is disabled for the probe and browser sign-in is blocked. |
-| Claude Code | `claude /usage` run non-interactively in a dedicated probe directory, with hooks and MCP servers disabled for that process; probe transcripts are removed afterwards. Requires Claude Code ≥ 2.0. |
-| Codex | `codex app-server` JSON-RPC (`account/read`, `account/rateLimits/read`) with a read-only sandbox. |
-| Grok | `grok agent stdio` (Agent Client Protocol) `initialize` + the `_x.ai/billing` extension. No session is created. Plans that publish no usage percentage (e.g. Free) show only the plan and billing period. |
+| Antigravity | `agy -p /usage --output-format json`: the CLI's built-in usage report. |
+| Claude Code | `claude auth status --json` to check the login, then `claude /usage`: the same `/usage` command you can type in Claude Code. |
+| Codex | `codex app-server`: the JSON-RPC server Codex provides for editor integrations, queried with `account/read` and `account/rateLimits/read`. |
+| Grok | `grok agent stdio`: Grok's Agent Client Protocol server, queried with its `_x.ai/billing` method. |
 
-Tools whose CLI cannot be found are hidden. Usage refreshes every 5 minutes, when the flyout is
-opened with data older than 2 minutes, or from the refresh button / tray menu.
+Tools whose CLI is not installed are hidden. Usage refreshes every 5 minutes, when the panel is opened with data older than 2 minutes, or on demand from the refresh button or the tray menu.
 
-## Build
+## Will this get my account banned, or use up my tokens?
 
-Requires the .NET 10 SDK on Windows 10 2004 or later.
+Headroom is designed to avoid both:
+
+- **No unofficial API access.** It never reads your stored credentials, never calls private web endpoints, and never imitates a browser or a CLI. The usage data comes from the vendor's own CLI.
+- **No prompts are sent.** Every query above is a local command or an account query. None of them starts a conversation with a model, so polling uses no tokens and no message quota.
+- **Old CLIs are skipped.** On an old CLI, `/usage` might be treated as an ordinary prompt, so Headroom checks the version first (agy ≥ 1.1.11, Claude Code ≥ 2.0) and refuses to run it otherwise.
+- **Your setup is left alone.** Probes run with a read-only sandbox (Codex), with hooks and MCP servers disabled for that one process (Claude Code), and with self-updates disabled (agy). Your saved settings are not changed. Claude Code transcripts created by the probe are deleted afterwards.
+- **Signed-out CLIs are not hammered.** Claude Code's login is checked before `/usage` runs. If agy is signed out, Headroom stops polling it until you press Refresh, so it cannot keep trying to sign in.
+
+The traffic is what the CLI itself sends when you check usage by hand, a few times an hour. This is not a guarantee from any vendor; check their terms if you are unsure.
+
+## Install and build
+
+Requires Windows 10 2004 or later and the .NET 10 SDK.
 
 ```powershell
 dotnet build src/Headroom -p:Platform=x64
 dotnet test tests/Headroom.Core.Tests
 ```
 
-The app is unpackaged and self-contained with the Windows App SDK. Right-click the tray icon for
-**Refresh now**, **Start with Windows**, and **Quit**. New tray icons start in the overflow area;
-drag it next to the clock, or enable it under *Settings → Personalization → Taskbar → Other system tray icons*.
+The app is unpackaged and bundles the Windows App SDK. Right-click the tray icon for **Refresh now**, **Start with Windows**, and **Quit**. Windows puts new tray icons in the overflow area (^); drag the icon next to the clock to keep it visible.
 
-## Layout
+## Project layout
 
-- `src/Headroom.Core` – CLI discovery, providers and parsers (no UI dependencies).
-- `src/Headroom` – WinUI 3 app: tray icon (Win32 `Shell_NotifyIcon`), flyout window, view models.
-- `tests/Headroom.Core.Tests` – parser tests based on real CLI output.
+- `src/Headroom.Core`: CLI discovery, usage providers, and output parsers (no UI).
+- `src/Headroom`: the WinUI 3 app: tray icon, flyout panel, view models.
+- `tests/Headroom.Core.Tests`: parser and behavior tests based on real CLI output.
+
+## License
+
+Headroom is licensed under the [GNU General Public License v3.0](LICENSE).
