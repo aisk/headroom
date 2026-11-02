@@ -17,7 +17,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Usage" />
+                    <TextBlock VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Headroom" />
                     <Button
                         Grid.Column="1"
                         Padding="6"
