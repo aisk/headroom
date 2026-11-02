@@ -10,7 +10,9 @@ namespace Headroom.Core.Providers.Antigravity;
 /// </summary>
 public static class AntigravityUsageParser
 {
-    public static UsageSnapshot Parse(string json, DateTimeOffset now)
+    /// <param name="exitCode">Exit code of agy, used to classify failed reports.</param>
+    /// <param name="stderr">Standard error of agy, used only for classification and never shown.</param>
+    public static UsageSnapshot Parse(string json, DateTimeOffset now, int exitCode = 0, string? stderr = null)
     {
         JsonNode? root;
         try
@@ -30,17 +32,17 @@ public static class AntigravityUsageParser
         var status = report["status"]?.GetValue<string>();
         if (!string.Equals(status, "SUCCESS", StringComparison.OrdinalIgnoreCase))
         {
-            var detail = report["error"]?.ToString() ?? report["response"]?.ToString();
-            throw new UsageProviderException(
-                $"agy usage report failed ({status ?? "unknown status"})" +
-                (string.IsNullOrWhiteSpace(detail) ? "." : $": {CliFirstLine(detail)}"));
+            // The detail can contain account information, so it is only used for classification.
+            var detail = $"{report["error"]}\n{report["response"]}\n{stderr}";
+            throw AntigravityFailureClassifier.TryClassify(exitCode, detail)
+                  ?? new UsageProviderException($"agy usage report failed ({status ?? "unknown status"}).");
         }
 
         var command = report["command"] as JsonObject;
         if (!string.Equals(command?["name"]?.GetValue<string>(), "usage", StringComparison.Ordinal) ||
             command?["data"]?["groups"] is not JsonArray groups)
         {
-            throw new UsageProviderException("agy did not return a usage command report. Run `agy` once to sign in.");
+            throw new UsageProviderException("agy did not return a usage report.");
         }
 
         var windows = new List<UsageWindow>();
@@ -89,6 +91,4 @@ public static class AntigravityUsageParser
         "daily" => "Daily",
         _ => name ?? window ?? "Limit",
     };
-
-    private static string CliFirstLine(string text) => Cli.CliProcess.FirstLine(text) ?? text;
 }

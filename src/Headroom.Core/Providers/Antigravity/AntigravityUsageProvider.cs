@@ -19,6 +19,9 @@ public sealed class AntigravityUsageProvider : IUsageProvider
 
     public bool IsInstalled() => CliLocator.Find("agy", OverrideVariable) is not null;
 
+    // A signed-out agy may try to start browser sign-in; only retry when the user asks for it.
+    public bool PauseAutoRefreshWhenSignedOut => true;
+
     public async Task<UsageSnapshot> FetchAsync(CancellationToken cancellationToken)
     {
         var executable = CliLocator.Find("agy", OverrideVariable)
@@ -53,14 +56,10 @@ public sealed class AntigravityUsageProvider : IUsageProvider
             var json = ExtractJsonObject(result.StandardOutput);
             if (json is null)
             {
-                var detail = CliProcess.FirstLine(result.StandardError) ?? CliProcess.FirstLine(result.StandardOutput);
-                throw new UsageProviderException(
-                    detail is null
-                        ? $"agy exited with code {result.ExitCode} and printed no usage report."
-                        : $"agy: {detail}");
+                throw AntigravityFailureClassifier.Classify(result.ExitCode, result.StandardOutput + "\n" + result.StandardError);
             }
 
-            return AntigravityUsageParser.Parse(json, DateTimeOffset.Now);
+            return AntigravityUsageParser.Parse(json, DateTimeOffset.Now, result.ExitCode, result.StandardError);
         }
         finally
         {

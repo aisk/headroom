@@ -8,6 +8,12 @@ public sealed class ProviderState(IUsageProvider provider)
 
     public string? Error { get; internal set; }
 
+    /// <summary>The last refresh found the CLI signed out or its credentials expired.</summary>
+    public bool NeedsSignIn { get; internal set; }
+
+    /// <summary>Automatic refreshes are suspended until the user refreshes manually.</summary>
+    public bool IsAutoRefreshPaused => NeedsSignIn && Provider.PauseAutoRefreshWhenSignedOut;
+
     public bool IsRefreshing { get; internal set; }
 
     public bool IsInstalled { get; internal set; } = true;
@@ -42,11 +48,18 @@ public sealed class UsageMonitor : IDisposable
         _ = RunLoopAsync(interval, _lifetime.Token);
     }
 
-    public Task RefreshAllAsync(TimeSpan? maxAge = null) =>
-        Task.WhenAll(Providers.Select(p => RefreshAsync(p, maxAge)));
+    /// <param name="maxAge">Skip providers attempted more recently than this.</param>
+    /// <param name="manual">A user-initiated refresh; also retries providers whose auto-refresh is paused.</param>
+    public Task RefreshAllAsync(TimeSpan? maxAge = null, bool manual = false) =>
+        Task.WhenAll(Providers.Select(p => RefreshAsync(p, maxAge, manual)));
 
-    public async Task RefreshAsync(ProviderState state, TimeSpan? maxAge = null)
+    public async Task RefreshAsync(ProviderState state, TimeSpan? maxAge = null, bool manual = false)
     {
+        if (!manual && state.IsAutoRefreshPaused)
+        {
+            return;
+        }
+
         if (maxAge is { } age && state.LastAttempt is { } last && DateTimeOffset.Now - last < age)
         {
             return;
@@ -64,6 +77,7 @@ public sealed class UsageMonitor : IDisposable
             if (!state.IsInstalled)
             {
                 state.Error = null;
+                state.NeedsSignIn = false;
                 state.Snapshot = null;
                 state.LastAttempt = DateTimeOffset.Now;
                 StateChanged?.Invoke(state);
@@ -76,6 +90,7 @@ public sealed class UsageMonitor : IDisposable
             {
                 state.Snapshot = await Task.Run(() => state.Provider.FetchAsync(_lifetime.Token)).ConfigureAwait(false);
                 state.Error = null;
+                state.NeedsSignIn = false;
             }
             catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
             {
@@ -84,10 +99,17 @@ public sealed class UsageMonitor : IDisposable
             catch (UsageProviderException ex)
             {
                 state.Error = ex.Message;
+                state.NeedsSignIn = ex.Kind == UsageErrorKind.SignInRequired;
+                if (state.NeedsSignIn)
+                {
+                    // The account may have changed or signed out; never keep showing its old quota.
+                    state.Snapshot = null;
+                }
             }
             catch (Exception ex)
             {
                 state.Error = $"Unexpected error: {ex.Message}";
+                state.NeedsSignIn = false;
             }
 
             state.LastAttempt = DateTimeOffset.Now;

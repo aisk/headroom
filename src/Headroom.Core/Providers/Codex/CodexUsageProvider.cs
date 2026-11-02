@@ -45,13 +45,20 @@ public sealed class CodexUsageProvider : IUsageProvider
             // Identity is optional; rate limits are what matter.
         }
 
-        if (account?["account"] is null && account?["requiresOpenaiAuth"]?.GetValue<bool>() == true)
+        CodexAccountCheck.ThrowIfUnusable(account);
+
+        JsonNode? limits;
+        try
         {
-            throw new UsageProviderException("Codex is not signed in. Run `codex login`.");
+            limits = await rpc.RequestAsync("account/rateLimits/read", null, RequestTimeout, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (JsonRpcErrorException ex) when (CodexAccountCheck.IsAuthenticationFailure(ex.Message))
+        {
+            throw new UsageProviderException(
+                "Codex login expired or is invalid. Run `codex login`.", ex, UsageErrorKind.SignInRequired);
         }
 
-        var limits = await rpc.RequestAsync("account/rateLimits/read", null, RequestTimeout, cancellationToken)
-            .ConfigureAwait(false);
         return CodexRateLimitParser.Parse(limits, account, DateTimeOffset.Now);
     }
 }

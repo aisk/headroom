@@ -29,16 +29,39 @@ public sealed record UsageSnapshot(
     public UsageWindow? MostConstrained => Windows.Count == 0 ? null : Windows.MinBy(w => w.RemainingPercent);
 }
 
+public enum UsageErrorKind
+{
+    General,
+
+    /// <summary>The CLI is signed out or its credentials expired; the user has to sign in again.</summary>
+    SignInRequired,
+}
+
 /// <summary>
 /// A user-presentable failure while reading usage from a CLI.
 /// </summary>
-public class UsageProviderException(string message, Exception? inner = null) : Exception(message, inner);
+public class UsageProviderException(string message, Exception? inner = null, UsageErrorKind kind = UsageErrorKind.General)
+    : Exception(message, inner)
+{
+    public UsageProviderException(string message, UsageErrorKind kind)
+        : this(message, null, kind)
+    {
+    }
+
+    public UsageErrorKind Kind { get; } = kind;
+}
 
 public interface IUsageProvider
 {
     string Id { get; }
 
     string DisplayName { get; }
+
+    /// <summary>
+    /// When signed out, stop automatic refreshes until the user refreshes manually. Used for CLIs
+    /// whose usage probe may start an interactive (browser) sign-in when no login is available.
+    /// </summary>
+    bool PauseAutoRefreshWhenSignedOut => false;
 
     /// <summary>Whether the backing CLI can be found on this machine.</summary>
     bool IsInstalled();

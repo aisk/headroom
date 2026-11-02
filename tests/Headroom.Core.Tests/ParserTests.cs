@@ -40,7 +40,7 @@ public class AntigravityUsageParserTests
     {
         var ex = Assert.Throws<UsageProviderException>(() =>
             AntigravityUsageParser.Parse("""{"status":"ERROR","error":"sign in required"}""", DateTimeOffset.UnixEpoch));
-        Assert.Contains("sign in required", ex.Message);
+        Assert.Equal(UsageErrorKind.SignInRequired, ex.Kind);
     }
 
     [Fact]
@@ -179,7 +179,7 @@ public class ClaudeUsageParserTests
     {
         var ex = Assert.Throws<UsageProviderException>(() =>
             ClaudeUsageParser.Parse("Failed to load usage data: 401", Now));
-        Assert.Contains("Failed to load usage data", ex.Message);
+        Assert.Contains("could not load usage data", ex.Message);
     }
 
     [Fact]

@@ -42,7 +42,16 @@ public sealed class GrokUsageProvider : IUsageProvider
         {
             throw new UsageProviderException("This Grok CLI version does not expose billing; run `grok update`.", ex);
         }
+        catch (JsonRpcErrorException ex) when (IsAuthenticationFailure(ex.Message))
+        {
+            throw new UsageProviderException("Not signed in to Grok. Run `grok login`.", ex, UsageErrorKind.SignInRequired);
+        }
 
         return GrokBillingParser.Parse(billing, DateTimeOffset.Now);
     }
+
+    // Grok's billing handler asks for `grok login` verbatim when no credentials are cached.
+    internal static bool IsAuthenticationFailure(string message) =>
+        new[] { "authentication required", "grok login", "not authenticated", "unauthenticated", "unauthorized", "not logged in" }
+            .Any(m => message.Contains(m, StringComparison.OrdinalIgnoreCase));
 }

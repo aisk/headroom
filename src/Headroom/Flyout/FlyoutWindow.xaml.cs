@@ -179,7 +179,7 @@ public sealed partial class FlyoutWindow : Window
         }
     }
 
-    private void OnRefreshClick(object sender, RoutedEventArgs e) => _ = ViewModel.RefreshAsync();
+    private void OnRefreshClick(object sender, RoutedEventArgs e) => _ = ViewModel.RefreshAsync(manual: true);
 
     private void OnRootKeyDown(object sender, KeyRoutedEventArgs e)
     {

@@ -92,7 +92,7 @@ public partial class App : Application
                 _flyout?.ShowAt(_tray.GetIconRect());
                 break;
             case MenuRefresh:
-                _ = _viewModel?.RefreshAsync();
+                _ = _viewModel?.RefreshAsync(manual: true);
                 break;
             case MenuAutoStart:
                 AutoStart.Set(!AutoStart.IsEnabled);

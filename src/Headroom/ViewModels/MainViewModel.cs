@@ -56,7 +56,8 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    public Task RefreshAsync(TimeSpan? maxAge = null) => _monitor.RefreshAllAsync(maxAge);
+    /// <param name="manual">User-initiated: also retries providers whose automatic refresh is paused.</param>
+    public Task RefreshAsync(TimeSpan? maxAge = null, bool manual = false) => _monitor.RefreshAllAsync(maxAge, manual);
 
     public IReadOnlyList<double?> TrayBars() =>
         Providers.Where(p => p.IsVisible).Select(p => p.Remaining).ToList();
@@ -69,7 +70,8 @@ public sealed class MainViewModel : ObservableObject
             var snapshot = provider.State.Snapshot;
             var constrained = snapshot?.MostConstrained;
             lines.Add(constrained is not null
-                ? $"{provider.Name}: {Math.Round(constrained.RemainingPercent):0}% left ({constrained.Label})"
+                ? $"{provider.Name}: {Math.Round(constrained.RemainingPercent):0}% left"
+                : provider.State.NeedsSignIn ? $"{provider.Name}: sign-in required"
                 : provider.HasError ? $"{provider.Name}: error"
                 : snapshot is not null ? $"{provider.Name}: {snapshot.Plan ?? "no quota data"}"
                 : $"{provider.Name}: …");

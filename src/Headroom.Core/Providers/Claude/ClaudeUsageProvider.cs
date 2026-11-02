@@ -49,6 +49,25 @@ public sealed class ClaudeUsageProvider : IUsageProvider
                 throw new UsageProviderException($"Claude Code {version} is too old for /usage; update to {MinimumVersion} or later.");
             }
 
+            // Check the local login first so a signed-out CLI never runs /usage.
+            var authResult = await CliProcess.RunAsync(
+                CliProcess.CreateStartInfo(executable, ["auth", "status", "--json"], probeDirectory),
+                TimeSpan.FromSeconds(15),
+                cancellationToken).ConfigureAwait(false);
+            var auth = ClaudeAuthStatus.TryParse(authResult.StandardOutput);
+            if (auth is { LoggedIn: false })
+            {
+                throw new UsageProviderException(
+                    "Claude Code is not signed in. Run `claude` and use /login.", UsageErrorKind.SignInRequired);
+            }
+
+            if (auth is { IsSubscription: false })
+            {
+                throw new UsageProviderException(
+                    $"Claude Code is signed in with {auth.AuthMethod ?? auth.ApiProvider ?? "a non-subscription login"}; " +
+                    "plan usage is only available for claude.ai subscriptions.");
+            }
+
             // --strict-mcp-config skips the user's MCP servers; the settings disable hooks and remote control
             // for this process only, leaving saved settings untouched.
             var result = await CliProcess.RunAsync(
@@ -60,8 +79,9 @@ public sealed class ClaudeUsageProvider : IUsageProvider
                 TimeSpan.FromSeconds(60),
                 cancellationToken).ConfigureAwait(false);
 
-            var output = string.IsNullOrWhiteSpace(result.StandardOutput) ? result.StandardError : result.StandardOutput;
-            return ClaudeUsageParser.Parse(output, DateTimeOffset.Now);
+            var output = result.StandardOutput + "\n" + result.StandardError;
+            var snapshot = ClaudeUsageParser.Parse(output, DateTimeOffset.Now);
+            return snapshot with { Account = auth?.Email, Plan = auth?.PlanDisplayName };
         }
         finally
         {

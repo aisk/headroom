@@ -27,15 +27,17 @@ public static partial class ClaudeUsageParser
     [GeneratedRegex(@"^\s*resets?\b.*$", RegexOptions.IgnoreCase)]
     private static partial Regex ResetLine();
 
-    private static readonly string[] ErrorMarkers =
+    // Mirrors the authentication markers CodexBar uses for Claude CLI failures.
+    private static readonly string[] AuthenticationMarkers =
     [
-        "Failed to load usage data",
-        "Invalid API key",
-        "Please run /login",
-        "not logged in",
-        "OAuth token has expired",
-        "rate_limit_error",
+        "authentication_error", "permission_error", "token_expired", "token expired", "token has expired",
+        "oauth account information not found", "does not have access to claude code", "run /login",
+        "run `claude login`", "run claude login", "api error: 401", "api error: 403", "forbidden",
+        "invalid api key", "invalid_api_key", "invalid credential", "not authenticated", "not authorized",
+        "not logged in", "token revoked", "unauthorized",
     ];
+
+    private static readonly string[] RateLimitMarkers = ["rate_limit_error", "rate limited", "ratelimited"];
 
     public static string StripAnsi(string text) => AnsiEscape().Replace(text, string.Empty);
 
@@ -101,14 +103,41 @@ public static partial class ClaudeUsageParser
             return new UsageSnapshot(windows, now);
         }
 
-        var text = string.Join('\n', lines);
-        var marker = ErrorMarkers.FirstOrDefault(m => text.Contains(m, StringComparison.OrdinalIgnoreCase));
-        var errorLine = marker is null
-            ? Cli.CliProcess.FirstLine(text)
-            : lines.First(l => l.Contains(marker, StringComparison.OrdinalIgnoreCase)).Trim();
-        throw new UsageProviderException(errorLine is null
+        throw ClassifyFailure(string.Join('\n', lines));
+    }
+
+    /// <summary>Maps a /usage report without quota values to a user-facing error.</summary>
+    internal static UsageProviderException ClassifyFailure(string text)
+    {
+        var lower = text.ToLowerInvariant();
+        if (AuthenticationMarkers.Any(lower.Contains))
+        {
+            return new UsageProviderException(
+                "Claude Code is signed out or its login expired. Run `claude` and use /login.",
+                UsageErrorKind.SignInRequired);
+        }
+
+        if (RateLimitMarkers.Any(lower.Contains))
+        {
+            return new UsageProviderException("Claude's usage endpoint is rate limited right now; try again later.");
+        }
+
+        if (lower.Contains("failed to load usage data"))
+        {
+            return new UsageProviderException("Claude Code could not load usage data; try again later.");
+        }
+
+        var compact = new string(lower.Where(c => !char.IsWhiteSpace(c)).ToArray());
+        if (compact.Contains("currentlyusingyoursubscription"))
+        {
+            // Some subscriptions (e.g. Education or organization-managed) report no session/weekly quota.
+            return new UsageProviderException("Claude did not report session or weekly limits for this subscription.");
+        }
+
+        var firstLine = Cli.CliProcess.FirstLine(text);
+        return new UsageProviderException(firstLine is null
             ? "Claude printed an empty usage report."
-            : $"Claude: {errorLine}");
+            : $"Claude: {firstLine}");
     }
 
     private static UsageWindow CreateWindow(string rawLabel, string pct, string kind, string? reset, DateTimeOffset now)

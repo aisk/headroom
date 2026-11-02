@@ -105,7 +105,9 @@ public sealed class ProviderViewModel(ProviderState state) : ObservableObject
     {
         IsVisible = State.IsInstalled;
         IsRefreshing = State.IsRefreshing;
-        Error = State.Error;
+        Error = State.IsAutoRefreshPaused
+            ? $"{State.Error} Automatic refresh is paused; use Refresh after signing in."
+            : State.Error;
         Note = State.Snapshot?.Note;
 
         var snapshot = State.Snapshot;
