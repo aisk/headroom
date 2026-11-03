@@ -30,7 +30,7 @@
 
                 <TextBlock
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="No supported CLI found. Install Antigravity (agy), Claude Code, Codex, or Grok and sign in."
+                    Text="{x:Bind ViewModel.NoProvidersText, Mode=OneWay}"
                     TextWrapping="Wrap"
                     Visibility="{x:Bind ViewModel.HasNoProviders, Mode=OneWay}" />
 

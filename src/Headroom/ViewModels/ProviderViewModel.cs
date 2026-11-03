@@ -91,7 +91,7 @@ public sealed partial class ProviderViewModel(ProviderState state) : ObservableO
         private set => SetProperty(ref _isRefreshing, value);
     }
 
-    /// <summary>Providers whose CLI is not installed are hidden.</summary>
+    /// <summary>Providers turned off in Settings or whose CLI is not installed are hidden.</summary>
     public bool IsVisible
     {
         get => _isVisible;
@@ -103,7 +103,7 @@ public sealed partial class ProviderViewModel(ProviderState state) : ObservableO
 
     public void Update(DateTimeOffset now)
     {
-        IsVisible = State.IsInstalled;
+        IsVisible = State.IsEnabled && State.IsInstalled;
         IsRefreshing = State.IsRefreshing;
         Error = State.IsAutoRefreshPaused
             ? $"{State.Error} Automatic refresh is paused; use Refresh after signing in."

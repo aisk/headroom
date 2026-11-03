@@ -24,6 +24,7 @@ public sealed partial class MainViewModel : ObservableObject
             var now = DateTimeOffset.Now;
             Providers.First(p => p.State == state).Update(now);
             HasVisibleProviders = Providers.Any(p => p.IsVisible);
+            RaisePropertyChanged(nameof(NoProvidersText));
             Changed?.Invoke(this, EventArgs.Empty);
         });
     }
@@ -46,6 +47,13 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     public bool HasNoProviders => !_hasVisibleProviders;
+
+    /// <summary>Opening the panel refreshes data older than two minutes.</summary>
+    public bool RefreshOnOpen { get; set; } = true;
+
+    public string NoProvidersText => Providers.Any(p => p.State.IsInstalled && !p.State.IsEnabled)
+        ? "All installed tools are turned off. Right-click the tray icon and choose Settings to show them."
+        : "No supported CLI found. Install Antigravity (agy), Claude Code, Codex, or Grok and sign in.";
 
     public void RefreshTexts()
     {

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="Headroom.Settings.SettingsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Headroom Settings">
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled">
+        <StackPanel Padding="24,20,24,24" Spacing="8">
+            <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Tools" />
+            <TextBlock
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{ThemeResource CaptionTextBlockStyle}"
+                Text="Tools that are turned off are hidden from the panel and the tray icon, and their CLI is never run."
+                TextWrapping="Wrap" />
+            <StackPanel x:Name="ProviderList" Margin="0,4,0,0" />
+
+            <TextBlock Margin="0,16,0,0" Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Refresh" />
+            <ComboBox
+                x:Name="IntervalBox"
+                MinWidth="200"
+                Header="Refresh automatically"
+                SelectionChanged="OnIntervalChanged" />
+            <CheckBox x:Name="RefreshOnOpenBox" Margin="0,4,0,0" Click="OnRefreshOnOpenClick">
+                <TextBlock Text="Refresh when the panel opens and the data is more than 2 minutes old" TextWrapping="Wrap" />
+            </CheckBox>
+            <TextBlock
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{ThemeResource CaptionTextBlockStyle}"
+                Text="The refresh button and the tray menu always refresh right away."
+                TextWrapping="Wrap" />
+        </StackPanel>
+    </ScrollViewer>
+</Window>

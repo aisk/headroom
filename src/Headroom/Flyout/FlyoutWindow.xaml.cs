@@ -97,7 +97,10 @@ public sealed partial class FlyoutWindow : Window
         // Pointer focus state: keeps Escape working without drawing a keyboard focus rectangle.
         Scroller.Focus(FocusState.Pointer);
         // Opening the flyout refreshes stale data without hammering the CLIs.
-        _ = ViewModel.RefreshAsync(maxAge: TimeSpan.FromMinutes(2));
+        if (ViewModel.RefreshOnOpen)
+        {
+            _ = ViewModel.RefreshAsync(maxAge: TimeSpan.FromMinutes(2));
+        }
     }
 
     public void Hide()

@@ -2,8 +2,10 @@ using Headroom.Core.Providers.Antigravity;
 using Headroom.Core.Providers.Claude;
 using Headroom.Core.Providers.Codex;
 using Headroom.Core.Providers.Grok;
+using Headroom.Core.Settings;
 using Headroom.Core.Usage;
 using Headroom.Flyout;
+using Headroom.Settings;
 using Headroom.Tray;
 using Headroom.ViewModels;
 using Microsoft.UI.Dispatching;
@@ -16,17 +18,20 @@ namespace Headroom;
 /// </summary>
 public partial class App : Application
 {
-    private static readonly TimeSpan RefreshInterval = TimeSpan.FromMinutes(5);
-
     private const uint MenuOpen = 1;
     private const uint MenuRefresh = 2;
     private const uint MenuAutoStart = 3;
     private const uint MenuQuit = 4;
+    private const uint MenuSettings = 5;
+
+    private readonly SettingsStore _settingsStore = new(SettingsStore.DefaultPath);
+    private AppSettings _settings = new();
 
     private Mutex? _singleInstance;
     private UsageMonitor? _monitor;
     private MainViewModel? _viewModel;
     private FlyoutWindow? _flyout;
+    private SettingsWindow? _settingsWindow;
     private TrayIcon? _tray;
 
     public App()
@@ -47,8 +52,10 @@ public partial class App : Application
             return;
         }
 
+        _settings = _settingsStore.Load();
         _monitor = new UsageMonitor((IUsageProvider[])[new AntigravityUsageProvider(), new ClaudeUsageProvider(), new CodexUsageProvider(), new GrokUsageProvider()]);
         _viewModel = new MainViewModel(_monitor, DispatcherQueue.GetForCurrentThread());
+        ApplySettings();
         _flyout = new FlyoutWindow(_viewModel);
 
         _tray = new TrayIcon();
@@ -59,7 +66,11 @@ public partial class App : Application
         _viewModel.Changed += (_, _) => UpdateTray();
         UpdateTray();
 
-        _monitor.Start(RefreshInterval);
+        if (_settings.RefreshInterval is null)
+        {
+            // Automatic refresh is off; still load the data once at startup.
+            _ = _monitor.RefreshAllAsync();
+        }
 
         // A launch by the user shows the panel right away; a startup launch stays in the tray.
         if (!AutoStart.IsStartupLaunch())
@@ -80,6 +91,49 @@ public partial class App : Application
         Interop.NativeMethods.GetWindowThreadProcessId(hwnd, out var processId);
         Interop.NativeMethods.AllowSetForegroundWindow(processId);
         Interop.NativeMethods.PostMessageW(hwnd, TrayIcon.ShowRequestMessage, IntPtr.Zero, IntPtr.Zero);
+    }
+
+    /// <summary>Applies the current settings to the monitor and the panel.</summary>
+    private void ApplySettings()
+    {
+        if (_monitor is null || _viewModel is null)
+        {
+            return;
+        }
+
+        foreach (var state in _monitor.Providers)
+        {
+            _ = _monitor.SetEnabled(state, _settings.IsProviderEnabled(state.Provider.Id));
+        }
+
+        if (_monitor.Interval != _settings.RefreshInterval)
+        {
+            _monitor.SetInterval(_settings.RefreshInterval);
+        }
+
+        _viewModel.RefreshOnOpen = _settings.RefreshOnOpen;
+    }
+
+    private void ShowSettings()
+    {
+        if (_monitor is null)
+        {
+            return;
+        }
+
+        _flyout?.Hide();
+        if (_settingsWindow is null)
+        {
+            _settingsWindow = new SettingsWindow(_settings, _monitor.Providers);
+            _settingsWindow.SettingsChanged += (_, _) =>
+            {
+                ApplySettings();
+                _settingsStore.Save(_settings);
+            };
+            _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        }
+
+        _settingsWindow.BringToFront();
     }
 
     private void UpdateTray()
@@ -105,6 +159,7 @@ public partial class App : Application
             new TrayMenuItem(MenuOpen, "Show usage"),
             new TrayMenuItem(MenuRefresh, "Refresh now"),
             TrayMenuItem.Separator,
+            new TrayMenuItem(MenuSettings, "Settings…"),
             new TrayMenuItem(MenuAutoStart, AutoStartMenuText(autoStart),
                 IsChecked: autoStart is AutoStartState.Enabled,
                 IsEnabled: autoStart is not AutoStartState.ManagedByPolicy),
@@ -119,6 +174,9 @@ public partial class App : Application
                 break;
             case MenuRefresh:
                 _ = _viewModel?.RefreshAsync(manual: true);
+                break;
+            case MenuSettings:
+                ShowSettings();
                 break;
             case MenuAutoStart:
                 await ToggleAutoStartAsync(autoStart);
@@ -170,6 +228,7 @@ public partial class App : Application
     private void Quit()
     {
         _monitor?.Dispose();
+        _settingsWindow?.Close();
         _tray?.Dispose();
         _tray = null;
         _flyout?.CloseForExit();

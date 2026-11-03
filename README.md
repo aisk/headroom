@@ -31,7 +31,7 @@ For each tool, Headroom runs one of these commands or protocols, which the CLI p
 | Codex | `codex app-server`: the JSON-RPC server Codex provides for editor integrations, queried with `account/read` and `account/rateLimits/read`. |
 | Grok | `grok agent stdio`: Grok's Agent Client Protocol server, queried with its `_x.ai/billing` method. |
 
-Tools whose CLI is not installed are hidden. Usage refreshes every 5 minutes, when the panel is opened with data older than 2 minutes, or on demand from the refresh button or the tray menu.
+Tools whose CLI is not installed are hidden. By default, usage refreshes every 5 minutes, when the panel is opened with data older than 2 minutes, or on demand from the refresh button or the tray menu. All of this can be changed in Settings.
 
 ## Install
 
@@ -39,7 +39,7 @@ Tools whose CLI is not installed are hidden. Usage refreshes every 5 minutes, wh
 
 Requires Windows 10 2004 or later and at least one of the supported CLIs installed and signed in.
 
-Right-click the tray icon for **Refresh now**, **Start with Windows**, and **Quit**. Windows puts new tray icons in the overflow area (^); drag the icon next to the clock to keep it visible.
+Right-click the tray icon for **Refresh now**, **Settings**, **Start with Windows**, and **Quit**. In Settings you can turn off tools you don't want to see (they are then never run), and choose how often usage refreshes, including manual only. Windows puts new tray icons in the overflow area (^); drag the icon next to the clock to keep it visible.
 
 ## Build
 
