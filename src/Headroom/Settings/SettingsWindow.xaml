@@ -10,7 +10,26 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled">
         <StackPanel Padding="24,20,24,24" Spacing="8">
-            <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Tools" />
+            <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="General" />
+            <CheckBox
+                x:Name="AutoStartBox"
+                Click="OnAutoStartClick"
+                Content="Start with Windows"
+                IsEnabled="False" />
+            <StackPanel x:Name="AutoStartNote" Visibility="Collapsed">
+                <TextBlock
+                    x:Name="AutoStartNoteText"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{ThemeResource CaptionTextBlockStyle}"
+                    TextWrapping="Wrap" />
+                <HyperlinkButton
+                    x:Name="StartupAppsLink"
+                    Padding="0,4"
+                    Click="OnStartupAppsClick"
+                    Content="Open Startup apps in Windows Settings" />
+            </StackPanel>
+
+            <TextBlock Margin="0,16,0,0" Style="{ThemeResource BodyStrongTextBlockStyle}" Text="Tools" />
             <TextBlock
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                 Style="{ThemeResource CaptionTextBlockStyle}"

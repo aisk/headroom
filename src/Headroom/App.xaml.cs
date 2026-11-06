@@ -20,9 +20,8 @@ public partial class App : Application
 {
     private const uint MenuOpen = 1;
     private const uint MenuRefresh = 2;
-    private const uint MenuAutoStart = 3;
+    private const uint MenuSettings = 3;
     private const uint MenuQuit = 4;
-    private const uint MenuSettings = 5;
 
     private readonly SettingsStore _settingsStore = new(SettingsStore.DefaultPath);
     private AppSettings _settings = new();
@@ -61,7 +60,7 @@ public partial class App : Application
         _tray = new TrayIcon();
         _tray.Invoked += (_, _) => _flyout.Toggle(_tray.GetIconRect());
         _tray.ShowRequested += (_, _) => _flyout.ShowAt(_tray.GetIconRect());
-        _tray.ContextMenuRequested += (_, anchor) => _ = ShowContextMenuAsync(anchor);
+        _tray.ContextMenuRequested += (_, anchor) => ShowContextMenu(anchor);
         _tray.AppearanceChanged += (_, _) => UpdateTray();
         _viewModel.Changed += (_, _) => UpdateTray();
         UpdateTray();
@@ -146,23 +145,19 @@ public partial class App : Application
         _tray.Update(TrayIconRenderer.Render(_viewModel.TrayBars()), _viewModel.TrayTooltip());
     }
 
-    private async Task ShowContextMenuAsync(Interop.NativeMethods.POINT anchor)
+    private void ShowContextMenu(Interop.NativeMethods.POINT anchor)
     {
         if (_tray is null)
         {
             return;
         }
 
-        var autoStart = await GetAutoStartStateAsync();
         var command = _tray.ShowMenu(
         [
             new TrayMenuItem(MenuOpen, "Show usage"),
             new TrayMenuItem(MenuRefresh, "Refresh now"),
             TrayMenuItem.Separator,
             new TrayMenuItem(MenuSettings, "Settings…"),
-            new TrayMenuItem(MenuAutoStart, AutoStartMenuText(autoStart),
-                IsChecked: autoStart is AutoStartState.Enabled,
-                IsEnabled: autoStart is not AutoStartState.ManagedByPolicy),
             TrayMenuItem.Separator,
             new TrayMenuItem(MenuQuit, "Quit Headroom"),
         ], anchor);
@@ -178,50 +173,9 @@ public partial class App : Application
             case MenuSettings:
                 ShowSettings();
                 break;
-            case MenuAutoStart:
-                await ToggleAutoStartAsync(autoStart);
-                break;
             case MenuQuit:
                 Quit();
                 break;
-        }
-    }
-
-    private static string AutoStartMenuText(AutoStartState state) => state switch
-    {
-        AutoStartState.DisabledByUser => "Start with Windows (turn on in Settings)",
-        AutoStartState.ManagedByPolicy => "Start with Windows (managed by your organization)",
-        _ => "Start with Windows",
-    };
-
-    private static async Task<AutoStartState> GetAutoStartStateAsync()
-    {
-        try
-        {
-            return await AutoStart.GetStateAsync();
-        }
-        catch (Exception)
-        {
-            return AutoStartState.ManagedByPolicy; // Shown disabled rather than failing the menu.
-        }
-    }
-
-    private static async Task ToggleAutoStartAsync(AutoStartState current)
-    {
-        try
-        {
-            if (current is AutoStartState.DisabledByUser)
-            {
-                // Windows does not let an app re-enable a startup task the user turned off.
-                await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings:startupapps"));
-                return;
-            }
-
-            await AutoStart.SetAsync(current is not AutoStartState.Enabled);
-        }
-        catch (Exception)
-        {
-            // Leave the setting unchanged; the menu shows the actual state next time.
         }
     }
 

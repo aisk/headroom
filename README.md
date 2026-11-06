@@ -39,7 +39,7 @@ Tools whose CLI is not installed are hidden. By default, usage refreshes every 5
 
 Requires Windows 10 2004 or later and at least one of the supported CLIs installed and signed in.
 
-Right-click the tray icon for **Refresh now**, **Settings**, **Start with Windows**, and **Quit**. In Settings you can turn off tools you don't want to see (they are then never run), and choose how often usage refreshes, including manual only. Windows puts new tray icons in the overflow area (^); drag the icon next to the clock to keep it visible.
+Right-click the tray icon for **Refresh now**, **Settings**, and **Quit**. In Settings you can make Headroom start with Windows, turn off tools you don't want to see (they are then never run), and choose how often usage refreshes, including manual only. Windows puts new tray icons in the overflow area (^); drag the icon next to the clock to keep it visible.
 
 ## Build
 
