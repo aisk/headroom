@@ -47,18 +47,21 @@
          ObservableCollection<T> bound by x:Bind, so trimmed builds showed an empty panel. -->
     <PackageReference Include="Microsoft.Windows.CsWinRT" Version="2.3.1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2957" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.4" />
+    <!-- Only the Windows App SDK components the app uses. The Microsoft.WindowsAppSDK metapackage also
+         pulls in AI, ML, Search and Widgets, which add about 70 MB (ONNX Runtime, DirectML) to the
+         self-contained package. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.6.4" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.6.4" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" Version="2.6.4" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Headroom.Core\Headroom.Core.csproj" />
   </ItemGroup>
 
-  <!-- Publish Properties -->
-  <PropertyGroup>
-    <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
-    <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-    <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+  <!-- Publish Properties: Release publishes are compiled with Native AOT (which also trims), so the
+       package carries no CoreCLR runtime or JIT. -->
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
 </Project>

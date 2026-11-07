@@ -10,7 +10,7 @@
   <Identity
     Name="63575stdlib.Headroom-AIUsageMeter"
     Publisher="CN=818DF042-6AA0-4023-9048-18A87D80B6D3"
-    Version="1.0.1.0" />
+    Version="1.0.2.0" />
 
   <Properties>
     <DisplayName>Headroom - AI Usage Meter</DisplayName>
